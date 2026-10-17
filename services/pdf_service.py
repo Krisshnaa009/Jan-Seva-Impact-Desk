@@ -290,7 +290,7 @@ def generate_pdf_report(
                     Paragraph(rec.date_display, styles["small"]),
                     Paragraph(rec.vendor or "—", styles["small"]),
                     Paragraph((rec.description or "—")[:80], styles["small"]),
-                    Paragraph(rec.category.value, styles["small"]),
+                    Paragraph(rec.category_value, styles["small"]),
                     Paragraph(rec.amount_display, styles["small"]),
                     Paragraph((rec.source_filename or "—")[:25], styles["small"]),
                 ]
@@ -346,7 +346,7 @@ def generate_pdf_report(
             issues_text = "; ".join(i.message for i in rec.validation_issues) or "No specific issues recorded."
             row_text = (
                 f"<b>#{rec.id[:8]}</b> — {rec.vendor or 'Unknown Vendor'} | "
-                f"{rec.date_display} | {rec.amount_display} | Status: {rec.status.value}<br/>"
+                f"{rec.date_display} | {rec.amount_display} | Status: {rec.status_value}<br/>"
                 f"<i>Issues: {issues_text}</i>"
             )
             story.append(Paragraph(row_text, styles["warning"]))
@@ -406,7 +406,7 @@ def _template_narrative(
 
     # Category breakdown
     from collections import Counter  # noqa: PLC0415
-    cat_counts = Counter(r.category.value for r in approved)
+    cat_counts = Counter(r.category_value for r in approved)
     top_cats = cat_counts.most_common(3)
     cat_text = ", ".join(f"{cat} ({count} record{'s' if count > 1 else ''})" for cat, count in top_cats)
 
@@ -433,7 +433,7 @@ def _ai_narrative(
     model = genai.GenerativeModel(model_name)
 
     records_text = "\n".join(
-        f"- {r.date_display}: {r.vendor} | {r.category.value} | {r.amount_display} | {r.description}"
+        f"- {r.date_display}: {r.vendor} | {r.category_value} | {r.amount_display} | {r.description}"
         for r in approved
     )
 

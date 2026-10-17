@@ -163,6 +163,18 @@ class ExpenseRecord(BaseModel):
     def has_errors(self) -> bool:
         return any(i.severity == "error" for i in self.validation_issues)
 
+    @property
+    def category_value(self) -> str:
+        if hasattr(self.category, "value"):
+            return str(self.category.value)
+        return str(self.category) if self.category else "Unknown"
+
+    @property
+    def status_value(self) -> str:
+        if hasattr(self.status, "value"):
+            return str(self.status.value)
+        return str(self.status) if self.status else "Pending Review"
+
     def clear_issues(self) -> None:
         self.validation_issues = []
 
@@ -178,10 +190,10 @@ class ExpenseRecord(BaseModel):
             "Date": self.date_display,
             "Vendor": self.vendor or "—",
             "Description": self.description or "—",
-            "Category": self.category.value,
+            "Category": self.category_value,
             "Amount": self.amount_display,
             "Receipt #": self.receipt_number or "—",
-            "Status": self.status.value,
+            "Status": self.status_value,
             "Source": self.source_filename,
             "Mode": self.extraction_mode,
         }

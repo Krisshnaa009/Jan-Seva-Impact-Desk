@@ -339,14 +339,15 @@ def _update_record(updated: ExpenseRecord):
             return
 
 
-def _status_badge(status: ExpenseStatus) -> str:
+def _status_badge(status: Any) -> str:
+    status_str = getattr(status, "value", str(status))
     cls = {
-        ExpenseStatus.APPROVED: "badge-approved",
-        ExpenseStatus.PENDING: "badge-pending",
-        ExpenseStatus.NEEDS_CORRECTION: "badge-needs",
-        ExpenseStatus.REJECTED: "badge-rejected",
-    }.get(status, "badge-pending")
-    return f'<span class="badge {cls}">{status.value}</span>'
+        ExpenseStatus.APPROVED.value: "badge-approved",
+        ExpenseStatus.PENDING.value: "badge-pending",
+        ExpenseStatus.NEEDS_CORRECTION.value: "badge-needs",
+        ExpenseStatus.REJECTED.value: "badge-rejected",
+    }.get(status_str, "badge-pending")
+    return f'<span class="badge {cls}">{status_str}</span>'
 
 
 def _mode_badge(mode: str) -> str:
@@ -432,7 +433,7 @@ community organisations. It helps you:
         cols[0].write(rec.date_display)
         cols[1].write(rec.vendor or "—")
         cols[2].write(rec.amount_display)
-        cols[3].write(rec.category.value)
+        cols[3].write(rec.category_value)
         cols[4].markdown(_status_badge(rec.status), unsafe_allow_html=True)
 
     if len(records) > 10:
@@ -606,7 +607,7 @@ def page_review():
             st.success("Re-validation complete.")
             st.rerun()
 
-    filtered = [r for r in records if r.status.value in filter_status]
+    filtered = [r for r in records if r.status_value in filter_status]
     st.markdown(f"Showing **{len(filtered)}** of {len(records)} record(s)")
     st.markdown('<hr class="divider">', unsafe_allow_html=True)
 
@@ -621,7 +622,7 @@ def page_review():
 
         with st.expander(
             f"{'✅' if rec.is_approved else '⚠️' if rec.validation_issues else '📋'} "
-            f"#{rec.id[:8]}  ·  {rec.vendor or 'Unknown Vendor'}  ·  {rec.amount_display}  ·  {rec.status.value}",
+            f"#{rec.id[:8]}  ·  {rec.vendor or 'Unknown Vendor'}  ·  {rec.amount_display}  ·  {rec.status_value}",
             expanded=(rec.status == ExpenseStatus.NEEDS_CORRECTION),
         ):
             # Validation issues banner
@@ -663,10 +664,13 @@ def page_review():
                         key=f"currency_{rec.id}",
                     )
                 with c3:
+                    cat_options = [c.value for c in ExpenseCategory]
+                    cur_cat_val = rec.category_value
+                    cat_idx = cat_options.index(cur_cat_val) if cur_cat_val in cat_options else 0
                     new_category = st.selectbox(
                         "Category",
-                        options=[c.value for c in ExpenseCategory],
-                        index=[c.value for c in ExpenseCategory].index(rec.category.value),
+                        options=cat_options,
+                        index=cat_idx,
                         key=f"category_{rec.id}",
                     )
                     new_receipt_number = st.text_input(
@@ -710,7 +714,7 @@ def page_review():
                     rec.amount = new_amount.strip() or None  # Let validator coerce
                     rec.currency = new_currency
                     rec.description = new_description.strip()
-                    rec.category = new_category
+                    rec.category = ExpenseRecord.coerce_category(new_category)
                     rec.receipt_number = new_receipt_number.strip()
                     rec.notes = new_notes.strip()
 
